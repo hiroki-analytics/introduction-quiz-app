@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { db } from "./firebase";
 import {
   doc, collection, onSnapshot,
-  setDoc, updateDoc, getDoc, serverTimestamp
+  setDoc, updateDoc, getDoc, getDocs,
+  deleteDoc, serverTimestamp
 } from "firebase/firestore";
 
 // ===== ユーティリティ =====
@@ -378,7 +379,7 @@ function QuizView({ session, members, userId, onAnswer, onReveal, onNext }) {
 }
 
 // ===== ランキング =====
-function LeaderboardView({ members, myUserId }) {
+function LeaderboardView({ members, myUserId, onReset }) {
   const sorted = [...members].sort((a, b) => (b.score || 0) - (a.score || 0));
   const medals = ["🥇", "🥈", "🥉"];
 
@@ -388,6 +389,17 @@ function LeaderboardView({ members, myUserId }) {
         <div style={{ fontSize: 56 }}>🏆</div>
         <h2 style={{ color: "#2D1B69", fontSize: 24, margin: "8px 0 4px", fontWeight: 900 }}>最終結果！</h2>
         <p style={{ color: "#888", fontSize: 13 }}>みんなのこと、少し知れたかな？</p>
+        {isHost && (
+          <button onClick={onReset} style={{
+            marginTop: 16, padding: "10px 28px",
+            background: "linear-gradient(135deg, #F4A942, #E8820C)",
+            color: "white", border: "none", borderRadius: 12,
+            fontSize: 14, fontWeight: 800, cursor: "pointer",
+            fontFamily: "'Noto Sans JP', sans-serif",
+          }}>
+            🔄 新しいゲームを始める
+          </button>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -506,6 +518,22 @@ export default function App() {
     await updateDoc(doc(db, "session", "main"), { revealed: true });
   };
 
+  const handleReset = async () => {
+    // members・answers・sessionを全削除してリセット
+    const [membersSnap, answersSnap] = await Promise.all([
+      getDocs(collection(db, "members")),
+      getDocs(collection(db, "answers")),
+    ]);
+    await Promise.all([
+      ...membersSnap.docs.map(d => deleteDoc(d.ref)),
+      ...answersSnap.docs.map(d => deleteDoc(d.ref)),
+      deleteDoc(doc(db, "session", "main")),
+    ]);
+    // localStorageもリセット
+    localStorage.removeItem("naitei-quiz-user");
+    window.location.reload();
+  };
+
   const handleNext = async () => {
     const nextIdx = session.currentQuestionIdx + 1;
     if (nextIdx >= session.questionOrder.length) {
@@ -524,7 +552,7 @@ export default function App() {
   if (loading) {
     content = <div style={{ textAlign: "center", padding: 60, color: "#888" }}>読み込み中...</div>;
   } else if (session?.status === "finished") {
-    content = <LeaderboardView members={members} myUserId={user?.userId} />;
+    content = <LeaderboardView members={members} myUserId={user?.userId} onReset={handleReset} />;
   } else if (session?.status === "quiz") {
     content = (
       <QuizView
