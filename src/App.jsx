@@ -14,6 +14,12 @@ function generateRoomCode() {
   return Math.floor(1000 + Math.random() * 9000).toString();
 }
 
+function clearQuizAnswers() {
+  Object.keys(localStorage)
+    .filter(k => k.startsWith("quiz-answer-"))
+    .forEach(k => localStorage.removeItem(k));
+}
+
 function shuffle(arr) {
   return [...arr].sort(() => Math.random() - 0.5);
 }
@@ -505,7 +511,7 @@ function QuizView({ session, members, userId, onAnswer, onReveal, onNext }) {
             <div style={{ fontSize: 28, fontWeight: 900, color: "white", fontFamily: "'Noto Sans JP', sans-serif" }}>
               {currentMember.name} さん！
             </div>
-            {myAnswer && (
+            {userId && myAnswer && (
               <div style={{ marginTop: 10, fontSize: 15, fontWeight: 700,
                 color: myAnswer === currentMember.name ? "#FFFDE7" : "#FFD0D0" }}>
                 {myAnswer === currentMember.name ? "✅ 正解！ +10pt" : `❌ あなたの回答: ${myAnswer}`}
@@ -779,6 +785,7 @@ export default function App() {
       deleteDoc(doc(db, "rooms", roomCode)),
     ]);
     localStorage.removeItem("naitei-quiz-host-room");
+    clearQuizAnswers();
     setSession(undefined);
     setMembers([]);
     setRoomCode(null);
@@ -795,6 +802,7 @@ export default function App() {
 
   const handleLeaveRoom = () => {
     localStorage.removeItem("naitei-quiz-user");
+    clearQuizAnswers();
     setUser(null);
     setRoomCode(null);
     setSession(undefined);
