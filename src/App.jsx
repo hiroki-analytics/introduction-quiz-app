@@ -419,6 +419,10 @@ function QuizView({ session, members, userId, onAnswer, onReveal, onNext }) {
     await onAnswer(name, name === currentMember.name);
   };
 
+  const myMember = members.find(m => m.userId === userId);
+  const sortedMembers = [...members].sort((a, b) => (b.score || 0) - (a.score || 0));
+  const medals = ["🥇", "🥈", "🥉"];
+
   if (!currentMember || options.length === 0) return null;
 
   return (
@@ -427,6 +431,15 @@ function QuizView({ session, members, userId, onAnswer, onReveal, onNext }) {
         <span style={{ fontSize: 13, color: "#888" }}>
           {currentQuestionIdx + 1} / {total}問目
         </span>
+        {userId && (
+          <span style={{
+            background: "#F8F4FF", border: "1.5px solid #D6BCFA",
+            borderRadius: 20, padding: "4px 14px",
+            fontSize: 14, fontWeight: 900, color: "#6B46C1",
+          }}>
+            💰 {myMember?.score || 0}pt
+          </span>
+        )}
         <div style={{ display: "flex", gap: 4 }}>
           {questionOrder.map((_, i) => (
             <div key={i} style={{
@@ -502,22 +515,55 @@ function QuizView({ session, members, userId, onAnswer, onReveal, onNext }) {
             </p>
           </>
         ) : (
-          <div style={{
-            marginTop: 16, padding: "20px", background: colorStyle.accent,
-            borderRadius: 12, textAlign: "center",
-            animation: "popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-          }}>
-            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 4 }}>正解は...</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: "white", fontFamily: "'Noto Sans JP', sans-serif" }}>
-              {currentMember.name} さん！
-            </div>
-            {userId && myAnswer && (
-              <div style={{ marginTop: 10, fontSize: 15, fontWeight: 700,
-                color: myAnswer === currentMember.name ? "#FFFDE7" : "#FFD0D0" }}>
-                {myAnswer === currentMember.name ? "✅ 正解！ +10pt" : `❌ あなたの回答: ${myAnswer}`}
+          <>
+            <div style={{
+              marginTop: 16, padding: "20px", background: colorStyle.accent,
+              borderRadius: 12, textAlign: "center",
+              animation: "popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", marginBottom: 4 }}>正解は...</div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: "white", fontFamily: "'Noto Sans JP', sans-serif" }}>
+                {currentMember.name} さん！
               </div>
-            )}
-          </div>
+              {userId && myAnswer && (
+                <div style={{ marginTop: 10, fontSize: 15, fontWeight: 700,
+                  color: myAnswer === currentMember.name ? "#FFFDE7" : "#FFD0D0" }}>
+                  {myAnswer === currentMember.name ? "✅ 正解！ +10pt" : `❌ あなたの回答: ${myAnswer}`}
+                </div>
+              )}
+            </div>
+
+            <div style={{
+              marginTop: 12, background: "white", borderRadius: 14,
+              padding: "14px 16px", border: "1.5px solid #E2D9F3",
+              animation: "slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: "#888", marginBottom: 10 }}>
+                📊 現在のスコア
+              </div>
+              {sortedMembers.map((m, i) => (
+                <div key={m.id} style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "6px 8px", borderRadius: 8, marginBottom: 4,
+                  background: m.userId === userId ? "#F8F4FF" : "transparent",
+                  border: m.userId === userId ? "1px solid #D6BCFA" : "1px solid transparent",
+                }}>
+                  <span style={{ fontSize: 16, width: 24, textAlign: "center" }}>
+                    {medals[i] ?? `${i + 1}`}
+                  </span>
+                  <span style={{
+                    flex: 1, fontSize: 14, fontWeight: 700,
+                    color: m.userId === userId ? "#6B46C1" : "#2D1B69",
+                  }}>
+                    {m.name}{m.userId === userId ? " 👈" : ""}
+                  </span>
+                  <span style={{ fontSize: 15, fontWeight: 900, color: "#9B72E6" }}>
+                    {m.score || 0}pt
+                  </span>
+                </div>
+              ))}
+            </div>
+          </>
         )}
 
         {isHost && !revealed && onReveal && (
