@@ -94,7 +94,7 @@ function RoomEntryView({ onEnter }) {
 }
 
 // ===== 司会者ロビー画面 =====
-function HostLobbyView({ roomCode, members, onStart }) {
+function HostLobbyView({ roomCode, members, onStart, onReset }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
@@ -180,6 +180,13 @@ function HostLobbyView({ roomCode, members, onStart }) {
             ※ 2人以上参加するとスタートできます
           </p>
         )}
+        <button onClick={onReset} style={{
+          marginTop: 16, background: "none", border: "none",
+          color: "#bbb", fontSize: 13, cursor: "pointer",
+          textDecoration: "underline", fontFamily: "'Noto Sans JP', sans-serif",
+        }}>
+          🔄 新しいルーム番号を発行する
+        </button>
       </div>
     </div>
   );
@@ -318,7 +325,7 @@ function RegisterView({ userName, onSubmit }) {
 }
 
 // ===== 待機室（参加者用） =====
-function WaitingView({ members }) {
+function WaitingView({ members, onLeave }) {
   return (
     <div style={{ maxWidth: 520, margin: "0 auto", padding: "0 16px" }}>
       <div style={{
@@ -351,7 +358,7 @@ function WaitingView({ members }) {
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 20 }}>
           {[0, 1, 2].map(i => (
             <div key={i} style={{
               width: 8, height: 8, borderRadius: "50%", background: "#9B72E6",
@@ -359,6 +366,13 @@ function WaitingView({ members }) {
             }} />
           ))}
         </div>
+        <button onClick={onLeave} style={{
+          background: "none", border: "none", color: "#bbb",
+          fontSize: 13, cursor: "pointer", textDecoration: "underline",
+          fontFamily: "'Noto Sans JP', sans-serif",
+        }}>
+          別のルームに参加する
+        </button>
         <style>{`
           @keyframes bounce {
             0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
@@ -640,7 +654,8 @@ export default function App() {
               localStorage.removeItem("naitei-quiz-user");
             }
           } else {
-            setUser(parsed);
+            // roomCode がない古い形式のデータは破棄してルーム入力から始める
+            localStorage.removeItem("naitei-quiz-user");
           }
         }
       }
@@ -695,7 +710,7 @@ export default function App() {
       score: 0,
       ...form,
     });
-    const newUser = { ...user, memberId };
+    const newUser = { ...user, memberId, roomCode };
     setUser(newUser);
     localStorage.setItem("naitei-quiz-user", JSON.stringify(newUser));
   };
@@ -813,7 +828,7 @@ export default function App() {
         />
       );
     } else {
-      content = <HostLobbyView roomCode={roomCode} members={members} onStart={handleStart} />;
+      content = <HostLobbyView roomCode={roomCode} members={members} onStart={handleStart} onReset={handleReset} />;
     }
   } else {
     // 参加者フロー
@@ -865,7 +880,7 @@ export default function App() {
     } else if (!isRegistered) {
       content = <RegisterView userName={user.userName} onSubmit={handleRegister} />;
     } else {
-      content = <WaitingView members={members} />;
+      content = <WaitingView members={members} onLeave={handleLeaveRoom} />;
     }
   }
 
